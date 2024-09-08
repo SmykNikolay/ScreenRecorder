@@ -1,86 +1,10 @@
-const { exec } = require("child_process");
-const path = require("path");
+const Recorder = require("./Recorder");
+const Merger = require("./Merger");
+const ScreenshotRecorder = require("./ScreenshotRecorder");
 const schedule = require("node-schedule");
-const fs = require("fs");
 
-class Recorder {
-  constructor(name, command) {
-    this.name = name;
-    this.command = command;
-  }
 
-  getOutputFilePath() {
-    const now = new Date();
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    let fileName = this.name === "screen" ? `${minutes}screen` : minutes;
-    return path.join(__dirname, `ffmpeg/output_${fileName}.mp4`);
-  }
 
-  record() {
-    const outputFilePath = this.getOutputFilePath();
-    console.error(`Старт записи ${this.name}`);
-    exec(this.command(outputFilePath), (error, _stdout, _stderr) => {
-      if (error) {
-        console.error(`Ошибка при записи ${this.name}: ${error.message}`);
-        return;
-      }
-      console.log(
-        `Видео ${this.name} записано и сохранено в ${outputFilePath}`,
-      );
-    });
-  }
-}
-
-class Merger {
-  mergeVideos() {
-    const videoFiles = fs
-      .readdirSync(path.join(__dirname, "ffmpeg"))
-      .filter((file) => file.startsWith("output_") && file.endsWith(".mp4"));
-    const groupedFiles = videoFiles.reduce((acc, file) => {
-      const key = file.replace(/screen|video/, "");
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(file);
-      return acc;
-    }, {});
-
-    for (const key in groupedFiles) {
-      if (groupedFiles[key].length < 2) continue;
-
-      const videoFilePath = path.join(
-        __dirname,
-        "ffmpeg",
-        groupedFiles[key].find((file) => !file.includes("screen")),
-      );
-      const screenFilePath = path.join(
-        __dirname,
-        "ffmpeg",
-        groupedFiles[key].find((file) => file.includes("screen")),
-      );
-      const outputFilePath = path.join(
-        __dirname,
-        "ffmpeg",
-        `merged_${key}.mp4`,
-      );
-
-      const mergeCommand = `ffmpeg -i ${videoFilePath} -i ${screenFilePath} -filter_complex "[0:v]scale=1280:-1[v0];[1:v]scale=1280:-1[v1];[v0][v1]vstack=inputs=2[v]" -map "[v]" ${outputFilePath}`;
-
-      exec(mergeCommand, (error, _stdout, _stderr) => {
-        if (error) {
-          console.error(`Ошибка при объединении видео: ${error.message}`);
-          return;
-        }
-        console.log(`Видео успешно объединены и сохранены в ${outputFilePath}`);
-
-        // Удаление исходных файлов после объединения
-        fs.unlinkSync(videoFilePath);
-        fs.unlinkSync(screenFilePath);
-        console.log(
-          `Исходные файлы удалены: ${videoFilePath}, ${screenFilePath}`,
-        );
-      });
-    }
-  }
-}
 
 const videoRecorder = new Recorder(
   "video",
@@ -93,7 +17,22 @@ const screenRecorder = new Recorder(
     `ffmpeg -f avfoundation -pix_fmt uyvy422 -framerate 30 -video_size 1920x1080 -probesize 100M -i "3:none" -t 10 -c:v libx264 -preset fast -crf 23 -level 4.1 ${outputFilePath}`,
 );
 
+const screenshotRecorder = new ScreenshotRecorder(
+  "screen",
+  (outputFilePath) =>
+    `ffmpeg -f avfoundation -framerate 1 -video_size 1920x1080 -i "3:none" -vframes 1 ${outputFilePath}`,
+);
+
+const cameraScreenshotRecorder = new ScreenshotRecorder(
+  "camera",
+  (outputFilePath) =>
+    `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "0" -vframes 1 ${outputFilePath}`,
+);
+
 const merger = new Merger();
 schedule.scheduleJob("* * * * *", () => videoRecorder.record());
 schedule.scheduleJob("* * * * *", () => screenRecorder.record());
-schedule.scheduleJob("*/5 * * * *", () => merger.mergeVideos());
+schedule.scheduleJob("* * * * *", () => screenshotRecorder.capture());
+schedule.scheduleJob("* * * * *", () => cameraScreenshotRecorder.capture());
+
+schedule.scheduleJob("0 * * * *", () => merger.mergeVideos());
