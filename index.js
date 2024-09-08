@@ -2,9 +2,6 @@ const Recorder = require("./Recorder");
 const Merger = require("./Merger");
 const schedule = require("node-schedule");
 
-
-
-
 const videoRecorder = new Recorder(
   "video",
   (outputFilePath) =>
@@ -35,4 +32,4 @@ schedule.scheduleJob("* * * * *", () => screenshotRecorder.capture());
 schedule.scheduleJob("* * * * *", () => cameraScreenshotRecorder.capture());
 
 schedule.scheduleJob("*/2 * * * *", () => merger.mergeVideos());
-schedule.scheduleJob("0 * * * *", () => merger.mergeAllMergedVideos());
+schedule.scheduleJob("*/5 * * * *", () => merger.mergeAllMergedVideos());

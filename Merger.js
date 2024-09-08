@@ -62,13 +62,25 @@ class Merger {
       return;
     }
 
+    const outputFilePath = path.join(
+      __dirname,
+      "ffmpeg",
+      "final_merged_output.mp4",
+    );
+
+    // Если файл уже существует, добавьте его в начало списка
+    if (fs.existsSync(outputFilePath)) {
+      mergedFiles.unshift("final_merged_output.mp4");
+    }
+
     const fileListPath = path.join(__dirname, "ffmpeg", "filelist.txt");
     fs.writeFileSync(
       fileListPath,
-      mergedFiles.map((file) => `file '${path.join(__dirname, "ffmpeg", file)}'`).join("\n"),
+      mergedFiles
+        .map((file) => `file '${path.join(__dirname, "ffmpeg", file)}'`)
+        .join("\n"),
     );
 
-    const outputFilePath = path.join(__dirname, "ffmpeg", "final_merged_output.mp4");
     const mergeCommand = `ffmpeg -f concat -safe 0 -i ${fileListPath} -c copy ${outputFilePath}`;
 
     exec(mergeCommand, (error, _stdout, _stderr) => {
@@ -76,11 +88,22 @@ class Merger {
         console.error(`Ошибка при объединении всех видео: ${error.message}`);
         return;
       }
-      console.log(`Все видео успешно объединены и сохранены в ${outputFilePath}`);
+      console.log(
+        `Все видео успешно объединены и сохранены в ${outputFilePath}`,
+      );
 
       // Удаление временного файла списка
       fs.unlinkSync(fileListPath);
       console.warn(`Временный файл списка удален: ${fileListPath}`);
+
+      // Удаление объединенных файлов после успешного объединения
+      mergedFiles.forEach((file) => {
+        if (file !== "final_merged_output.mp4") {
+          const filePath = path.join(__dirname, "ffmpeg", file);
+          fs.unlinkSync(filePath);
+          console.warn(`Удален файл: ${filePath}`);
+        }
+      });
     });
   }
 }
