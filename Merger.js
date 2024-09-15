@@ -53,6 +53,7 @@ class Merger {
   }
 
   mergeAllMergedVideos() {
+    console.log("Объединение всех видео в одно...");
     const mergedFiles = fs
       .readdirSync(path.join(__dirname, "ffmpeg"))
       .filter((file) => file.startsWith("merged_") && file.endsWith(".mp4"));
@@ -104,6 +105,7 @@ class Merger {
           console.warn(`Удален файл: ${filePath}`);
         }
       });
+      console.warn("Все исходные файлы объединены и удалены.");
     });
   }
 }

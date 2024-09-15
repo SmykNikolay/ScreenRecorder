@@ -31,5 +31,5 @@ const merger = new Merger();
 schedule.scheduleJob("* * * * *", () => screenshotRecorder.capture());
 schedule.scheduleJob("* * * * *", () => cameraScreenshotRecorder.capture());
 
-schedule.scheduleJob("*/2 * * * *", () => merger.mergeVideos());
-schedule.scheduleJob("*/5 * * * *", () => merger.mergeAllMergedVideos());
+schedule.scheduleJob("* * * * *", () => merger.mergeVideos());
+schedule.scheduleJob("* * * * *", () => merger.mergeAllMergedVideos());
