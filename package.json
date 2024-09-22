@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "merge": "node mergeVideos.js",
+    "mergeAll": "node mergeAllVideos.js"
   },
   "author": "",
   "license": "ISC",

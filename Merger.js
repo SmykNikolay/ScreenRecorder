@@ -54,6 +54,8 @@ class Merger {
 
   mergeAllMergedVideos() {
     console.log("Объединение всех видео в одно...");
+    const now = new Date();
+
     const mergedFiles = fs
       .readdirSync(path.join(__dirname, "ffmpeg"))
       .filter((file) => file.startsWith("merged_") && file.endsWith(".mp4"));
@@ -66,7 +68,7 @@ class Merger {
     const outputFilePath = path.join(
       __dirname,
       "ffmpeg",
-      "final_merged_output.mp4",
+      `final_merged_output${now.toISOString()}.mp4`,
     );
 
     // Если файл уже существует, добавьте его в начало списка
@@ -111,3 +113,4 @@ class Merger {
 }
 
 module.exports = Merger;
+
